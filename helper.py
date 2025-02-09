@@ -980,7 +980,7 @@ def missing_value_analysis(df):
         grossWorldWide=('grossWorldWide', 'mean'),
         gross_US_Canada=('gross_US_Canada', 'mean'),
         opening_weekend_Gross=('opening_weekend_Gross', 'mean')
-    )
+    ).reset_index()
     budget_collection_relation['grossWorldWide'] = (budget_collection_relation['grossWorldWide'] / 1000000).apply(
         format_collections)
     budget_collection_relation['gross_US_Canada'] = (budget_collection_relation['gross_US_Canada'] / 1000000).apply(
@@ -989,8 +989,8 @@ def missing_value_analysis(df):
                 budget_collection_relation['opening_weekend_Gross'] / 1000000).apply(format_collections)
     budget_collection_relation.rename(
         columns={'grossWorldWide': 'Avg. Worldwide Collections', 'gross_US_Canada': 'Avg. US & Canada Collections',
-                 'opening_weekend_Gross': 'Avg. Opening Weekend Collections'}, inplace=True)
-    budget_collection_relation.rename_axis("Missing Budget?", inplace=True)
+                 'opening_weekend_Gross': 'Avg. Opening Weekend Collections', 'budget' : 'Missing Budget?'},
+        inplace=True)
     st.table(budget_collection_relation)
     st.markdown("### Key Insights from the Chart")
     st.markdown("Budget is missing for less successful movies.")
@@ -1027,7 +1027,7 @@ def missing_value_analysis(df):
         grossWorldWide=('grossWorldWide', 'mean'),
         gross_US_Canada=('gross_US_Canada', 'mean'),
         opening_weekend_Gross=('opening_weekend_Gross', 'mean')
-    )
+    ).reset_index()
     location_collection_relation['grossWorldWide'] = (location_collection_relation['grossWorldWide'] / 1000000).apply(
         format_collections)
     location_collection_relation['gross_US_Canada'] = (location_collection_relation['gross_US_Canada'] / 1000000).apply(
@@ -1036,11 +1036,12 @@ def missing_value_analysis(df):
                 location_collection_relation['opening_weekend_Gross'] / 1000000).apply(format_collections)
     location_collection_relation.rename(
         columns={'grossWorldWide': 'Avg. Worldwide Collections', 'gross_US_Canada': 'Avg. US & Canada Collections',
-                 'opening_weekend_Gross': 'Avg. Opening Weekend Collections'}, inplace=True)
-    location_collection_relation.rename_axis('Missing Filming Location?', inplace=True)
+                 'opening_weekend_Gross': 'Avg. Opening Weekend Collections', 'filming_locations' : 'Missing Filming '
+                                                                                                    'Location?'}, inplace=True)
     st.table(location_collection_relation)
     st.markdown("### Key Insights from the Table")
-    st.markdown("Lower worldwide gross earnings suggest these genres have smaller productions and limited releases.")
+    st.markdown("Lower collections suggest that movies with missing filming location data have smaller "
+                "productions and limited releases.")
     st.write("")
 
     # Missing Filming Location Values by Genre
