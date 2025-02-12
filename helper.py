@@ -548,21 +548,28 @@ def compare(df, col, role):
     st.table(highest_rated_movies)
     st.write("")
 
-    # Comparing top rated genres
-    st.header(f'Top rated genres of {selected_option1} and {selected_option2}')
-    top_rated_genres1 = option1_df.explode("genres").drop_duplicates(subset=['Title']).groupby("genres")[
-        'Rating'].mean().sort_values(ascending=False).head(5).reset_index()
-    top_rated_genres2 = option2_df.explode("genres").drop_duplicates(subset=['Title']).groupby("genres")[
-        'Rating'].mean().sort_values(ascending=False).head(5).reset_index()
-    top_rated_genres1[role] = selected_option1
-    top_rated_genres2[role] = selected_option2
-    top_genres = pd.concat([top_rated_genres1, top_rated_genres2])
+    # Comparing most frequent genres
+    st.header(f'Most frequent genres of {selected_option1} and {selected_option2}')
+
+    # Explode genres column
+    genre_counts1 = option1_df.explode("genres")["genres"].value_counts().head(5)
+    genre_df1 = genre_counts1.reset_index()
+    genre_df1.columns = ["Genres", "Count"]
+    genre_df1[role] = selected_option1
+
+    genre_counts2 = option2_df.explode("genres")["genres"].value_counts().head(5)
+    genre_df2 = genre_counts2.reset_index()
+    genre_df2.columns = ["Genres", "Count"]
+    genre_df2[role] = selected_option2
+
+    # top_genres = pd.concat([top_rated_genres1, top_rated_genres2])
+    most_frequent_genres = pd.concat([genre_df1, genre_df2])
     fig = px.bar(
-        top_genres,
-        x='genres',
-        y='Rating',
+        most_frequent_genres,
+        x='Genres',
+        y='Count',
+        text = 'Count',
         color=role,
-        labels={'genres': 'Genres'},
         barmode='group'
     )
     st.plotly_chart(fig, key="top genres comparison")

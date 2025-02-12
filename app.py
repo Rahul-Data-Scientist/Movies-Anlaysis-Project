@@ -13,7 +13,7 @@ choice = st.sidebar.radio(
      "Countries Comparison", "Writers Comparison")
 )
 
-df = pd.read_csv("movies_cleaned.csv")
+df = pd.read_csv("movies_cleaned(1).csv")
 df = preprocessor.preprocess(df)
 
 uncleaned_df = pd.read_csv("uncleaned_movies.csv")
