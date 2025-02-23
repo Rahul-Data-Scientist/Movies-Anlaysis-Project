@@ -84,7 +84,7 @@ def analyse(df, col, role):
     st.write("")
 
     # Year-wise total movies
-    st.header('Year-wise Total Movies Done by ' + selected_option)
+    st.header(f'Year-wise Presence of {selected_option} Movies in the Dataset')
     movie_count_df = filtered_df.groupby("Year").size().reset_index(name='movie_count')
     all_years = range(2000, 2025)
     movie_count_df = movie_count_df.set_index('Year').reindex(all_years, fill_value=0).reset_index()
@@ -1004,7 +1004,7 @@ def missing_value_analysis(df):
     st.markdown("Possible Reasons:-")
     st.markdown("1) Smaller/Independent Films May Not Report Budgets")
     st.markdown("2) If a movie flopped, studios may not see value in reporting the budget.")
-    st.markdown("3) Bias in Data Source - IMDB may not have incomplete budget data for smaller movies.")
+    st.markdown("3) Bias in Data Source - IMDB may have incomplete budget data for smaller movies.")
     st.write("")
 
     # Top Genres with missing budget values
@@ -1204,10 +1204,11 @@ def overall_analysis(df):
     )
     st.plotly_chart(fig, key="Heatmap")
     st.markdown("### Key insights from the Heatmap")
-    st.markdown("There is a very high positive correlation between Worldwide Collections, US & Canada Collections and"
-                " Opening Weekend Collections implying if any one collection metric is high, then there is an extremely"
-                " high chance that the other collection metrics will also be high.")
-    st.markdown("Votes also have considerably high correlation with the collection metrics")
+    st.markdown("There is a very high positive correlation between all the collection metrics.")
+    st.markdown("Votes also have considerably high positive correlation with the collection metrics")
+    st.markdown("Ratings show weak correlation with collection metrics, indicating that the highest-grossing movies "
+                "aren’t always the most beloved by audiences. Their massive earnings often stem from factors beyond "
+                "quality—such as being sequels to popular films with an established fanbase.")
     st.write("")
 
     # Top Directors by Worldwide Gross Collection and Average Rating per Movie
@@ -1247,24 +1248,21 @@ def overall_analysis(df):
                 "grossing movies also make critically acclaimed movies.")
     st.write("")
 
-    # Opening weekend gross vs total gross
-    st.header("Opening Weekend Gross vs. Total Gross")
-    genre_df = df.explode("genres")
+    # US & Canada collection vs rest of the world collection
+    st.header("US & Canada Collections Vs Other Collections")
     fig = px.scatter(
-        genre_df,
-        x='opening_weekend_Gross (in Millions)',
-        y='grossWorldWide (in Millions)',
-        size='Votes',
-        color='genres',
-        hover_data=['Title'],
-        labels={"opening_weekend_Gross (in Millions)": "Opening Weekend Gross (in Millions)",
-                "grossWorldWide (in Millions)": "Total Gross (in Millions)"}
+        df,
+        x='gross_US_Canada (in Millions)',
+        y='outside_US_Canada_gross',
+        labels={'outside_US_Canada_gross': 'Outside US & Canada Collection',
+                'gross_US_Canada (in Millions)': 'US & Canada Collections'}
     )
-    st.plotly_chart(fig, key="opening weekend vs total gross chart")
+    st.plotly_chart(fig, key="domestic vs international collection")
     st.markdown("### Key insights from the above Chart")
-    st.markdown("The above chart shows a linear relationship between Worldwide Collections and Opening Weekend "
-                "Collections")
-    st.markdown("This chart supports the conclusions we drew from the correlation heatmap.")
+    st.markdown("Movies successful in the US & Canada often perform well internationally, but not always in a perfectly"
+                " linear way.")
+    st.markdown("Lower earners in US & Canada show more variation in international success as other factors like genre "
+                "and cultural appeal also play a role in shaping worldwide collections.")
     st.write("")
 
     # Top 10 Highest Grossing Movies
@@ -1338,115 +1336,147 @@ def overall_analysis(df):
     st.markdown("Australia, India and France also have comparatively good average ratings.")
     st.write("")
 
-    # comparison of location-based and studio-based movies
-    st.header("Comparison of Location-Based and Studio-Based Movies")
-    location_cat_df = df.groupby("filming_location_category").agg(
-        total_movies=('Title', 'count'),
-        average_collection=('grossWorldWide (in Millions)', 'mean'),
-        average_rating=('Rating', 'mean'),
-        average_votes=('Votes', 'mean')
-    ).reset_index()
+    # comparison of Monolingual and Multilingual movies
+    st.header("Comparison of Monolingual and Multilingual Movies")
     tab1, tab2, tab3, tab4 = st.tabs(['By Total Movies', 'By Average Worldwide Collections', 'Average Ratings',
                                      'Average Votes'])
     with tab1:
+        movies_frequency = df['Language Format'].value_counts().reset_index()
         fig = px.bar(
-            location_cat_df,
-            x='filming_location_category',
-            y='total_movies',
-            labels={'filming_location_category': 'Filming Location Category', 'total_movies': 'Total Movies'},
-            title='Comparison of Location-Based and Studio-Based Movies by Average Votes'
+            movies_frequency,
+            x='Language Format',
+            y='count',
+            labels={"count": "Total Movies"},
+            title="Comparison of Monolingual and Multilingual Movies by Total Movies",
+            text='count'
         )
         st.plotly_chart(fig, key="by total movies")
-        st.markdown("### Key insights from the above Chart")
-        st.markdown("The chart shows the distribution of Location-Based and Studio-Based Movies in the Dataset.")
-        st.markdown("Clearly, Location-Based Movies Dominate the Dataset.")
+        st.markdown("### Key insights from the above chart")
+        st.markdown("The chart shows the distribution of monolingual and multilingual movies in the dataset.")
+        st.markdown("Clearly, monolingual movies dominate the dataset by having movies almost double than the "
+                    "multilingual movies")
     with tab2:
+        collections_df = df.groupby("Language Format")['grossWorldWide (in Millions)'].mean().reset_index()
+        collections_df['grossWorldWide (in Millions)'] = collections_df['grossWorldWide (in Millions)'].round(2)
         fig = px.bar(
-            location_cat_df,
-            x='filming_location_category',
-            y='average_collection',
-            labels={'filming_location_category': 'Filming Location Category',
-                    'average_collection': 'Average Worldwide Gross (in Millions)'},
-            title='Comparison of Location-Based and Studio-Based Movies by Average Worldwide Collections'
+            collections_df,
+            x='Language Format',
+            y='grossWorldWide (in Millions)',
+            labels={"grossWorldWide (in Millions)": "Average Worldwide Collections (in Millions)"},
+            title="Comparison of Monolingual and Multilingual Movies by Total Movies",
+            text='grossWorldWide (in Millions)'
         )
         st.plotly_chart(fig, key="by worldwide collections")
-        st.markdown("### Key insights from the above Chart")
-        st.markdown("The Chart Compares the Studio-Based and Location-Based Movies by their Average Worldwide "
-                    "Collections per Movie.")
-        st.markdown("We can see that Location-Based Movies perform better than Studio-Based Movies in terms of Box "
-                    "Office Revenue")
+        st.markdown("### Key insights from the above chart")
+        st.markdown("The chart compares the monolingual and multilingual movies by their average worldwide "
+                    "collections per movie.")
+        st.markdown("Multilingual movies tend to perform much better at box office than monolingual movies")
     with tab3:
+        ratings_df = df.groupby("Language Format")['Rating'].mean().reset_index()
+        ratings_df['Rating'] = ratings_df['Rating'].round(2)
         fig = px.bar(
-            location_cat_df,
-            x='filming_location_category',
-            y='average_rating',
-            labels={'filming_location_category': 'Filming Location Category', 'average_rating': 'Average Ratings'},
-            title='Comparison of Location-Based and Studio-Based Movies by Average Ratings'
+            ratings_df,
+            x='Language Format',
+            y='Rating',
+            title="Comparison of Monolingual and Multilingual Movies by Average Ratings",
+            text='Rating'
         )
         st.plotly_chart(fig, key="by average ratings")
-        st.markdown("### Key insights from the above Chart")
-        st.markdown("The Chart Compares the Studio-Based and Location-Based Movies by their Average Ratings per Movie.")
-        st.markdown("We can see that Studio-Based Movies generally produce better content than Location-Based Movies.")
+        st.markdown("### Key insights from the above chart")
+        st.markdown("The chart compares the monolingual and multilingual movies by their average ratings per movie.")
+        st.markdown("Both categories of movies have similar average ratings, with multilingual movies exhibiting a "
+                    "slightly higher rating, suggesting a broader appeal among diverse audiences")
     with tab4:
+        votes_df = df.groupby("Language Format")['Votes'].mean().reset_index()
+        votes_df['Votes'] = votes_df['Votes'].round(2)
         fig = px.bar(
-            location_cat_df,
-            x='filming_location_category',
-            y='average_votes',
-            labels={'filming_location_category': 'Filming Location Category', 'average_votes': 'Average Votes'},
-            title='Comparison of Location-Based and Studio-Based Movies by Average Votes'
+            votes_df,
+            x='Language Format',
+            y='Votes',
+            title="Comparison of Monolingual and Multilingual Movies by Average Votes",
+            text='Votes'
         )
         st.plotly_chart(fig, key="by average votes")
         st.markdown("### Key insights from the above Chart")
-        st.markdown("The Chart Compares the Studio-Based and Location-Based Movies by their Average Votes per Movie.")
-        st.markdown("We can see that Location-Based Movies have more audience than Studio-Based Movies.")
+        st.markdown("The chart compares the monolingual and multilingual movies by their average votes per movie.")
+        st.markdown("Multilingual movies have very high average votes than monolingual Movies, suggesting much larger "
+                    "audience for multilingual movies")
     st.write("")
 
-    # comparison of yearly trends of location-based and studio-based movies
-    st.header("Comparison of Yearly Trends of Location-Based and Studio-Based Movies")
-    tab1, tab2 = st.tabs(['By Average Ratings', 'By Average Worldwide Collections'])
+    # comparison of yearly trends of Multilingual and Monolingual movies
+    st.header("Comparison of Yearly Trends of Multilingual and Monolingual Movies")
+    tab1, tab2, tab3, tab4 = st.tabs(['By Total Movies', 'By Average Ratings', 'By Average Worldwide Collections',
+                                      'By Average Votes'])
+    yearly_analysis = df.groupby(["Year", "Language Format"]).agg(
+        total_movies=('Title', 'count'),
+        avg_rating=('Rating', 'mean'),
+        avg_collections=('grossWorldWide (in Millions)', 'mean'),
+        avg_votes=('Votes', 'mean')
+    ).reset_index()
+    cols = ['avg_rating', 'avg_collections', 'avg_votes']
+    yearly_analysis[cols] = yearly_analysis[cols].round(2)
     with tab1:
-        filming_cat_rating_trend = df.groupby(["Year", "filming_location_category"])['Rating'].mean().reset_index()
         fig = px.line(
-            filming_cat_rating_trend,
+            yearly_analysis,
             x='Year',
-            y='Rating',
-            color='filming_location_category',
-            labels={'Rating': 'Average Ratings', 'filming_location_category': 'Filming Location Category'},
+            y='total_movies',
+            color='Language Format',
             markers=True,
-            title='Year-wise Average Rating Analysis of Studio-Based and Location-Based Movies'
+            labels={'total_movies': 'Total Movies'},
+            title='Year-wise Total Movies Analysis of Monolingual and Multilingual Movies'
         )
-        st.plotly_chart(fig, key="by yearly average ratings")
+        st.plotly_chart(fig, key="yearly total movies")
         st.markdown("### Key insights from the above Chart")
-        st.markdown("Studio-Based Movies consistently have better average ratings than Location-Based Movies.")
-        st.markdown("Both Category of Movies experienced a sharp dip in their average ratings in the year 2020.")
-        st.markdown("Location-Based movies have less fluctuations than Studio-Based movies, indicating steady "
-                    "performance.")
-        st.markdown("There was a gradual increase in average ratings of Location-Based Movies over the years 2008-2015 "
-                    "indicating improvement in their content quality.")
+        st.markdown("Monolingual movies have consistently outnumbered multilingual movies.")
+        st.markdown("Multilingual movie counts have remained relatively stable over the years.")
+        st.markdown("Post-2020, monolingual movies have increased, while multilingual movies have declined. Probably "
+                    "because of changing audience preferences or production challenges after COVID-19 pandemic")
     with tab2:
-        filming_cat_collection_trend = df.groupby(["Year", "filming_location_category"])[
-            'grossWorldWide (in Millions)'].mean().reset_index()
         fig = px.line(
-            filming_cat_collection_trend,
+            yearly_analysis,
             x='Year',
-            y='grossWorldWide (in Millions)',
-            color='filming_location_category',
-            labels={'grossWorldWide (in Millions)': 'Average Worldwide Collections (in Millions)',
-                    'filming_location_category': 'Filming Location Category'},
+            y='avg_rating',
+            color='Language Format',
             markers=True,
-            title='Year-wise Average Worldwide Collection Analysis of Studio-Based and Location-Based Movies'
+            labels={'avg_rating': 'Average Ratings'},
+            title='Year-wise Rating Analysis of Monolingual and Multilingual Movies'
         )
-        st.plotly_chart(fig, key="by yearly worldwide collections")
+        st.plotly_chart(fig, key="by average rating")
         st.markdown("### Key insights from the above Chart")
-        st.markdown("Most of the time, Location-Based Movies perform better than Studio-Based Movies in terms of Box "
-                    "Office Revenue.")
-        st.markdown("In the years 2001, 2016, 2020 and 2024, Box Office Performances of Studio-Based Movies were greater "
-                    "than Location-Based Movies.")
-        st.markdown("Location-Based movies have less fluctuations than Studio-Based movies, indicating steady "
-                    "performance.")
-        st.markdown("Both category of movies experienced a sharp dip in their average collections in the year 2012.")
-        st.markdown("So, Overall Location-Based movies have higher chance of performing better at box office than "
-                    "Studio-Based movies.")
+        st.markdown("Multilingual movies have consistently higher ratings than monolingual ones.")
+        st.markdown("Monolingual movie ratings have improved over time.")
+        st.markdown("Both categories saw a sharp dip in 2020 but recovered afterward.")
+    with tab3:
+        fig = px.line(
+            yearly_analysis,
+            x='Year',
+            y='avg_collections',
+            color='Language Format',
+            markers=True,
+            labels={'avg_collections': 'Average Worldwide Collections (in Millions)'},
+            title='Year-wise Average Worldwide Collection Analysis of Monolingual and Multilingual Movies'
+        )
+        st.plotly_chart(fig, key="by yearly average collections")
+        st.markdown("### Key insights from the above Chart")
+        st.markdown("Multilingual movies consistently earn more worldwide than monolingual movies.")
+        st.markdown("Multilingual movie collections show sharp fluctuations, especially around 2010 and 2020.")
+        st.markdown("Monolingual movies have a steady but less globally expansive revenue trend.")
+        st.markdown("Both categories show post-2020 recovery, likely due to cinema reopenings.")
+    with tab4:
+        fig = px.line(
+            yearly_analysis,
+            x='Year',
+            y='avg_votes',
+            color='Language Format',
+            markers=True,
+            labels={'avg_votes': 'Average Votes'},
+            title='Year-wise Audience Engagement Analysis of Monolingual and Multilingual Movies'
+        )
+        st.plotly_chart(fig, key="by yearly audience engagement")
+        st.markdown("### Key insights from the above Chart")
+        st.markdown("Multilingual movies consistently receive higher audience engagement than monolingual movies.")
+        st.markdown("A sharp drop in votes around 2020 suggests the impact of the COVID-19 pandemic.")
+        st.markdown("By 2024-2025, engagement levels for both categories have nearly equalized.")
 
 
 
