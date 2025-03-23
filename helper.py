@@ -416,21 +416,61 @@ def compare(df, col, role):
     st.write("")
 
     # lifetime collection comparison
-    st.header("Lifetime Collections Comparison")
-    comparison_chart = pd.concat([df_chart1, df_chart2])
-    # Melting the dataframe to make it compatible with a grouped bar chart
-    comparison_chart_melted = comparison_chart.melt(id_vars="Name", var_name="Metric", value_name="Value")
+    st.header("Box Office Collections Comparison")
+    st.markdown(f"The bar chart shows the average (mean) box office collection, which highlights the overall financial "
+                f"strength of movies from each {role}. However, the box plot provides a clearer picture by showing the "
+                "median (typical earnings) and IQR (range of most movies), making it less affected by extreme "
+                "blockbusters. Together, these visualizations give a balanced comparison of movie performances")
+    st.markdown(f"If the mean box office collection is significantly higher than the median, it suggests that the "
+                f"{role} has a few exceptionally high-grossing movies (outliers) that are inflating the average. "
+                "On the other hand, if the mean and median are close, it indicates a more consistent box office "
+                "performance across movies, with fewer extreme blockbusters skewing the data.")
+    # comparison_chart = pd.concat([df_chart1, df_chart2])
+    # # Melting the dataframe to make it compatible with a grouped bar chart
+    # comparison_chart_melted = comparison_chart.melt(id_vars="Name", var_name="Metric", value_name="Value")
+    #
+    # fig = px.bar(
+    #     comparison_chart_melted,
+    #     x="Metric",
+    #     y="Value",
+    #     color="Name",
+    #     barmode="group",
+    #     labels={"Value": "Values (in Millions)", "Metric": "Metrics"},
+    #     text="Value"
+    # )
+    # st.plotly_chart(fig, key="lifetime collections comparison chart")
+    merged_df = pd.concat([option1_df, option2_df])
+
+    # Comparing average collections
+    avg_collection_metrics = merged_df.groupby(col)[[
+        'grossWorldWide (in Millions)',
+        'gross_US_Canada (in Millions)',
+        'opening_weekend_Gross (in Millions)'
+    ]].mean().reset_index()
+    melted_metrics = avg_collection_metrics.melt(id_vars=col, var_name="Metric", value_name="Value")
+    melted_metrics['Value'] = melted_metrics['Value'].round(2)
 
     fig = px.bar(
-        comparison_chart_melted,
-        x="Metric",
-        y="Value",
-        color="Name",
-        barmode="group",
-        labels={"Value": "Values (in Millions)", "Metric": "Metrics"},
-        text="Value"
+        melted_metrics,
+        x='Metric',
+        y='Value',
+        color=col,
+        text='Value',
+        barmode='group',
+        labels={"Value": "Values (in Millions)"},
+        title="Average Box Office Collections Comparison"
     )
-    st.plotly_chart(fig, key="lifetime collections comparison chart")
+
+    st.plotly_chart(fig, key="avg_metrics_compare")
+
+    # comparing usual collections
+    fig = px.box(merged_df, y=col, x="grossWorldWide (in Millions)",
+                 title="Usual Worldwide Box Office Collections (Median and IQR)",
+                 labels={"grossWorldWide (in Millions)": "Worldwide Box Office Collection (in Millions)"},
+                 points="outliers",
+                 hover_data='Title'
+                 )
+    st.plotly_chart(fig, key="compare usual metrics")
     st.write("")
 
     # Comparing yearly gross collections
@@ -622,24 +662,44 @@ def compare_countries(df):
     st.write("")
     comparison_chart = pd.concat([df_chart1, df_chart2])
 
-    # Comparing both countries lifetime collections
-    st.header("Lifetime Collections Comparison")
-    # Melting the dataframe to make it compatible with a grouped bar chart
-    comparison_chart_melted = comparison_chart.melt(id_vars="Name", var_name="Metric", value_name="Value")
+    # Comparing both countries collections
+    st.header("Box Office Collections Comparison")
+    st.markdown("The bar chart shows the average (mean) box office collection, which highlights the overall financial "
+                "strength of movies from each country. However, the box plot provides a clearer picture by showing the "
+                "median (typical earnings) and IQR (range of most movies), making it less affected by extreme "
+                "blockbusters. Together, these visualizations give a balanced comparison of movie performances across "
+                "countries.")
+    st.markdown("If the mean box office collection is significantly higher than the median, it suggests that the "
+                "country has a few exceptionally high-grossing movies (outliers) that are inflating the average. "
+                "On the other hand, if the mean and median are close, it indicates a more consistent box office "
+                "performance across movies, with fewer extreme blockbusters skewing the data.")
 
-    # Plotting the bar chart
-    fig = px.bar(
-        comparison_chart_melted,
-        x="Metric",
-        y="Value",
-        color="Name",
-        barmode="group",
-        labels={"Value": "Values (in Millions)", "Metric": "Metrics"},
-        text="Value"
-    )
+    country1_df = countries_exploded[countries_exploded['countries_origin'] == selected_country1]
+    country2_df = countries_exploded[countries_exploded['countries_origin'] == selected_country2]
+    countries_df = pd.concat([country1_df, country2_df])[['countries_origin', 'grossWorldWide (in Millions)']]
 
-    # Show the plot
-    st.plotly_chart(fig, key="country lifetime collections")
+    mean_df = countries_df.groupby("countries_origin").mean().reset_index()
+    mean_df['grossWorldWide (in Millions)'] = mean_df['grossWorldWide (in Millions)'].round(2)
+    fig = px.bar(mean_df, x="countries_origin", y="grossWorldWide (in Millions)",
+                 title="Average (Mean) Box Office Collections by Country",
+                 labels={"grossWorldWide (in Millions)": "Average Box Office Collection (in Millions)",
+                         "countries_origin": "Country"},
+                 text='grossWorldWide (in Millions)')  # Show values on bars
+
+    fig.update_layout(template="plotly_white", yaxis_title="Box Office Collection (Millions)")
+    st.plotly_chart(fig, key="country avg collections")
+
+    fig = px.box(countries_df, y="countries_origin", x="grossWorldWide (in Millions)",
+                 title="Typical (Median) Box Office Collection by Country",
+                 labels={"grossWorldWide (in Millions)": "Box Office Collection (in Millions)",
+                         "countries_origin": "Country"},
+                 points="outliers",
+                 log_x=True)  # Use log_x instead of log_y for horizontal orientation
+
+    fig.update_traces(hovertemplate="Country: %{y}<br>Box Office: %{x}M")  # Show actual values on hover
+
+    fig.update_layout(template="plotly_white", xaxis_title="Box Office Collection (Log Scale)")
+    st.plotly_chart(fig, key="country collections distributions")
     st.write("")
 
     # Comparing genre distributions
@@ -654,8 +714,8 @@ def compare_countries(df):
     st.plotly_chart(fig_treemap, key="genre distribution comparison chart")
     st.write("")
 
-    # year-wise collections analysis
-    st.header(f"Year-wise collection comparison of {selected_country1} and {selected_country2}")
+    # year-wise average collections analysis
+    st.header(f"Year-wise average collection comparison of {selected_country1} and {selected_country2}")
     df_combined = pd.concat([country1_df, country2_df])
     fig = px.line(
         df_combined.groupby(['countries_origin', 'Year'])['grossWorldWide (in Millions)'].mean().reset_index(),
@@ -670,7 +730,7 @@ def compare_countries(df):
     st.write("")
 
     # Comparing top directors
-    st.header(f"Top 5 directors of {selected_country1} and {selected_country2}")
+    st.header(f"Top directors of {selected_country1} and {selected_country2}")
     country2_top_directors = country2_df.explode("directors").groupby("directors")[
         'grossWorldWide (in Millions)'].sum().sort_values(ascending=False).head(5).reset_index()
     country1_top_directors = country1_df.explode("directors").groupby("directors")[
@@ -691,7 +751,7 @@ def compare_countries(df):
     st.write("")
 
     # Comparing top actors
-    st.header(f"Top 5 actors of {selected_country1} and {selected_country2}")
+    st.header(f"Top actors of {selected_country1} and {selected_country2}")
     country2_top_actors = country2_df.explode("stars").groupby("stars")[
         'grossWorldWide (in Millions)'].sum().sort_values(ascending=False).head(5).reset_index()
     country1_top_actors = country1_df.explode("stars").groupby("stars")[
@@ -708,6 +768,26 @@ def compare_countries(df):
         barmode='group'
     )
     st.plotly_chart(fig, key="actors comparison chart")
+    st.write("")
+
+    # Comparing top writers
+    st.header(f"Top writers of {selected_country1} and {selected_country2}")
+    country2_top_writers = country2_df.explode("writers").groupby("writers")[
+        'grossWorldWide (in Millions)'].sum().sort_values(ascending=False).head(5).reset_index()
+    country1_top_writers = country1_df.explode("writers").groupby("writers")[
+        'grossWorldWide (in Millions)'].sum().sort_values(ascending=False).head(5).reset_index()
+    country1_top_writers['Country'] = selected_country1
+    country2_top_writers['Country'] = selected_country2
+    top_writers = pd.concat([country1_top_writers, country2_top_writers])
+    fig = px.bar(
+        top_writers,
+        x='writers',
+        y='grossWorldWide (in Millions)',
+        color='Country',
+        labels={'writers': 'Writers', 'grossWorldWide (in Millions)': 'Worldwide Collections(Million)'},
+        barmode='group'
+    )
+    st.plotly_chart(fig, key="writers comparison chart")
     st.write("")
 
     # Comparing movie duration distributions
@@ -1106,25 +1186,6 @@ def overall_analysis(df):
     col1.metric(label="Directors", value=total_directors)
     col2.metric(label="Actors", value=total_actors)
     col3.metric(label="Countries", value=total_countries)
-    st.write("")
-
-    # Year-wise Movies Production
-    st.header("Year-wise Movie Production")
-    yearwise_production = df.groupby("Year").size().reset_index(name='Total Movies')
-    fig = px.line(
-        yearwise_production,
-        x='Year',
-        y='Total Movies',
-        markers=True
-    )
-    st.plotly_chart(fig, key="Year-wise Movies Production chart")
-    st.markdown("### Key insights from the chart")
-    st.markdown("The chart shows the total movie productions by year.")
-    st.markdown("There is no stable trend in the yearly movie productions.")
-    st.markdown("The graph is showing fluctuating productions with noticeable increase in years 2004, 2008, 2020, 2022"
-                " and 2024 with peak in 2004 and 2008 but sharp decrease in years 2002, 2005, 2010, 2014, 2018 and "
-                "2021, lowest in the year 2018.")
-    st.markdown("2010-2012 and 2014-2016 are the periods where movie productions remained less.")
     st.write("")
 
     # Dominant countries in the dataset
