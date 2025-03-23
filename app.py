@@ -3,6 +3,8 @@ import pandas as pd
 import preprocessor,helper
 import plotly.express as px
 
+st.set_page_config(layout="wide")
+
 
 st.sidebar.title("Movies Analysis")
 
